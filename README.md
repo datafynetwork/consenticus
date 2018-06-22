@@ -33,6 +33,8 @@ Using cdn
 
 ## consenticus API
 
+##### consenticus().auth_email(email)
+##### consenticus().auth_callback(token)
 ##### consenticus().createConsent(params)
 ##### consenticus().getConsent(consent_uuid)
 ##### consenticus().getConsents()
