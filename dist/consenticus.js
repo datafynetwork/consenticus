@@ -1872,29 +1872,108 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Consenticus = function () {
-    // Init variables length and breadth
     function Consenticus(request_uuid) {
+        var host = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+        var auth_token = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+
         _classCallCheck(this, Consenticus);
 
         this.request_uuid = request_uuid;
+        if (host !== null) {
+            this.host = host;
+        } else {
+            // TODO Change this with production URL
+            this.host = 'http://127.0.0.1:8000';
+        }
+
+        this.auth_token = auth_token;
+
+        if (this.auth_token) {
+            this.http_auth = 'Token ' + this.auth_token;
+        } else {
+            this.http_auth = null;
+        }
+
+        this.headers = {
+            "Authorization": this.http_auth
+        };
     }
 
-    _createClass(Consenticus, [{
-        key: 'getConsents',
-        value: function getConsents() {}
-    }, {
-        key: 'getConsentRequests',
-        value: function getConsentRequests() {}
-    }, {
-        key: 'getConsentRequest',
-        value: function getConsentRequest() {
-            var request_uuid = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+    // AUTHENTICATION
 
-            if (request_uuid === null) {
-                request_uuid = this.request_uuid;
-            }
-            // get consent request with this.request_uuid
-            return _axios2.default.get('http://127.0.0.1:8000/api/v1/consent_requests/' + request_uuid).then(function (response) {
+    _createClass(Consenticus, [{
+        key: 'auth_email',
+        value: function auth_email(email) {
+            // Authorize user via email
+            var params = {
+                "email": email
+            };
+
+            return _axios2.default.post(this.host + '/api/v1/auth/email', params, {
+                crossdomain: true
+            }).then(function (response) {
+                console.log(response);
+                return response;
+            }).catch(function (error) {
+                if (error.response) {
+                    // The request was made and the server responded with a status code
+                    // that falls out of the range of 2xx
+                    console.log(error.response.data);
+                    console.log(error.response.status);
+                    // console.log(error.response.headers);
+                } else if (error.request) {
+                    // The request was made but no response was received
+                    // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+                    // http.ClientRequest in node.js
+                    console.log(error.request);
+                } else {
+                    // Something happened in setting up the request that triggered an Error
+                    console.log('Error', error.message);
+                }
+            });
+        }
+    }, {
+        key: 'auth_callback',
+        value: function auth_callback(token) {
+            var _this = this;
+
+            // Send token to /api/v1/auth/callback and receive authorization token
+            var auth_token = void 0;
+
+            var params = {
+                "token": token
+            };
+
+            _axios2.default.post(this.host + '/api/v1/auth/callback', params, {
+                crossdomain: true
+            }).then(function (response) {
+                _this.http_auth = 'Token ' + response.data.token; // Use this for headers
+                _this.headers.HTTP_AUTHORIZATION = _this.http_auth;
+            }).catch(function (error) {
+                if (error.response) {
+                    // The request was made and the server responded with a status code
+                    // that falls out of the range of 2xx
+                    console.log(error.response.data);
+                    console.log(error.response.status);
+                    // console.log(error.response.headers);
+                } else if (error.request) {
+                    // The request was made but no response was received
+                    // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+                    // http.ClientRequest in node.js
+                    console.log(error.request);
+                } else {
+                    // Something happened in setting up the request that triggered an Error
+                    console.log('Error', error.message);
+                }
+            });
+        }
+    }, {
+        key: '_get',
+        value: function _get(url) {
+            return _axios2.default.get(this.host + url, {
+                headers: this.headers
+            }).then(function (response) {
+                console.log(response);
                 return response;
             }).catch(function (error) {
                 if (error.response) {
@@ -1916,19 +1995,28 @@ var Consenticus = function () {
             });
         }
     }, {
-        key: 'getUser',
-        value: function getUser(entity_uuid) {}
+        key: 'getConsents',
+        value: function getConsents() {
+            return this._get('/api/v1/consents');
+            //   consenticus.getConsents().then(consent_response => consents = consent_response.data);
+        }
+    }, {
+        key: 'getConsent',
+        value: function getConsent(consent_uuid) {
+            return this._get('/api/v1/consents/' + consent_uuid);
+        }
     }, {
         key: 'createConsent',
         value: function createConsent(params) {
             // Make a POST request to api/v1/consents
-            _axios2.default.post('http://127.0.0.1:8000/api/v1/consents', params, {
+            return _axios2.default.post(this.host + '/api/v1/consents', params, {
                 crossdomain: true
             }).then(function (response) {
                 console.log(response);
                 if (document.getElementsByClassName('form-messages').length) {
                     document.getElementsByClassName('form-messages')[0].innerHTML = '<p class="green-text">' + response.statusText + ' (' + response.status + ')</p>';
                 }
+                return response;
                 // email_field.value = '';
                 // checkbox_field.checked = false;
                 // checkbox_field_2.checked = false;
@@ -1958,8 +2046,57 @@ var Consenticus = function () {
             });
         }
     }, {
-        key: 'getConsent',
-        value: function getConsent() {}
+        key: 'updateConsent',
+        value: function updateConsent(consent_uuid, params) {
+            return _axios2.default.put(this.host + '/api/v1/consents/' + consent_uuid, params, {
+                crossdomain: true
+            }).then(function (response) {
+                console.log(response);
+                return response;
+                // email_field.value = '';
+                // checkbox_field.checked = false;
+                // checkbox_field_2.checked = false;
+            }).catch(function (error) {
+                if (error.response) {
+                    // The request was made and the server responded with a status code
+                    // that falls out of the range of 2xx
+                    console.log(error.response.data);
+                    console.log(error.response.status);
+                    // console.log(error.response.headers);
+                } else if (error.request) {
+                    // The request was made but no response was received
+                    // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+                    // http.ClientRequest in node.js
+                    // console.log(error.request);
+                } else {}
+                    // Something happened in setting up the request that triggered an Error
+                    // console.log('Error', error.message);
+
+                    // console.log(error.config);
+            });
+        }
+    }, {
+        key: 'getConsentRequests',
+        value: function getConsentRequests() {
+            // Load user's consent requests
+            return this._get('/api/v1/consent_requests');
+        }
+    }, {
+        key: 'getConsentRequest',
+        value: function getConsentRequest() {
+            var request_uuid = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+
+            if (request_uuid === null) {
+                request_uuid = this.request_uuid;
+            }
+            // get consent request with this.request_uuid
+            return this._get('/api/v1/consent_requests/' + request_uuid);
+        }
+    }, {
+        key: 'getEntity',
+        value: function getEntity(entity_uuid) {
+            return this._get('/api/v1/entities/' + entity_uuid);
+        }
     }]);
 
     return Consenticus;
